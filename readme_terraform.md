@@ -39,7 +39,7 @@ terraform state list
 
 ## CHANGE
 
-When changing resources you can just do ````terraform apply```.
+When changing resources you can just do ```terraform apply```.
 
 
 ## DESTROY
