@@ -1,0 +1,9 @@
+name: env-test
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11.9
+  - scikit-learn
+  - pandas
+  - numpy
+  - matplotlib
