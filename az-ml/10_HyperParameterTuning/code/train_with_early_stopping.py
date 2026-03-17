@@ -1,12 +1,14 @@
 import argparse
 import mltable
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
+import numpy as np
+from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 import mlflow
 import os
 import joblib
+from math import ceil
 
 os.environ["MLFLOW_DISABLE_LOGGED_MODELS"] = "true"
 
@@ -15,7 +17,7 @@ os.environ["MLFLOW_DISABLE_LOGGED_MODELS"] = "true"
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-asset", type=str)
-    parser.add_argument("-C", type=float)
+    parser.add_argument("-alpha", type=float)
     parser.add_argument("--max-iter", type=int)
     return parser.parse_args()
 
@@ -52,6 +54,17 @@ def preprocess(df):
     # Split the data in train and test
     return train_test_split(X, y, test_size=0.3, random_state=42)
 
+### Early stopping:
+
+def split_k(dataset, k):
+    p = ceil(dataset.shape[0] / k)
+    l,n = [], 0
+    for i in range(k):
+        ub = n + p if (n + p) <= dataset.shape[0] else dataset.shape[0]
+        l.append(range(n,ub))
+        n += p
+    return l
+
 
 ### MAIN
 
@@ -61,28 +74,40 @@ def main():
     args = parse_args()
     
     # Load data
-    df = load_dataframe(args.data_asset)
+    df = load_dataframe(args.data_asset, local=False)
 
     # preprocess
     X_train, X_test, y_train, y_test = preprocess(df)
 
     with mlflow.start_run() as run:
 
-        # Train model 
-        lr = LogisticRegression(C=args.C, max_iter=int(args.max_iter))
-        lr.fit(X_train, y_train)
+        lr = SGDClassifier(loss="log_loss", alpha=args.alpha, max_iter=int(args.max_iter))
+        mlflow.log_params(lr.get_params())
+
+        for i, r in enumerate(split_k(X_train, k=2)):
+            
+            X_train_sub = X_train[r[0]:r[-1],:]
+            y_train_sub = y_train[r[0]:r[-1],:]
+
+            # Train model 
+            lr.fit(X_train_sub, y_train_sub.ravel())
+
+            # test model
+            y_pred = lr.predict(X_test)
+            accuracy = accuracy_score(y_test, y_pred)
+
+            # Log to MLFlow to support early stopping
+            mlflow.log_metric("accuracy", accuracy, step=i+1)
 
         # Log params
         mlflow.log_params(lr.get_params())
 
         # Validate
         y_pred = lr.predict(X_test)
-        accuracy = accuracy_score(y_test, y_pred)
         precision, recall, fscore, _ = precision_recall_fscore_support(y_test, y_pred)
 
         mlflow.log_metrics({
-            "accuracy"      : accuracy
-            ,"precision"    : float(precision[1])
+             "precision"    : float(precision[1])
             ,"recall"       : float(recall[1]) 
             ,"fscore"       : float(fscore[1])
         })
@@ -92,11 +117,7 @@ def main():
 
         joblib.dump(lr, os.path.join(model_path, "model.pkl"))
 
-        # mlflow.log_artifacts(model_path, "logistic_regression_model")
-        # mlflow.sklearn.save_model(lr, path="sklearn_model_meta")
-        # mlflow.log_artifacts("sklearn_model_meta", artifact_path="logistic_regression_model")
 
-        #mlflow.sklearn.log_model(lr, "logistic_regression_model")
 
 
 
