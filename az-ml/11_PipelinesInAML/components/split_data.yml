@@ -1,0 +1,26 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+name: split_diabetic_data
+display_name: Prepare training data
+version: "2.1"
+type: command
+inputs:
+  input_data: 
+    type: uri_file
+  test_size:
+    type: number
+  random_state:
+    type: integer
+outputs:
+  train_output:
+    type: uri_file
+  test_output:
+    type: uri_file
+code: ./code
+environment: azureml:diabetic_prediction_environment@latest
+command: |
+  python split_data.py \
+    --input-data ${{inputs.input_data}} \
+    --train-output ${{outputs.train_output}} \
+    --test-output ${{outputs.test_output}} \
+    --test-size ${{inputs.test_size}} \
+    --random-state ${{inputs.random_state}} 

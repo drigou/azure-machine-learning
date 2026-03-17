@@ -1,0 +1,39 @@
+display_name: diabetes_pipeline
+type: pipeline
+inputs:
+  input_data:
+    type: uri_folder
+    path: azureml:diabetes-data-ml-table:0
+
+jobs:
+
+  split_diabetic_data:
+    type: command
+    component: azureml:split_diabetic_data@latest
+    compute: diabetes-cluster
+    inputs:
+      input_data:
+        path: ${{parent.inputs.input_data}}
+      test_size: 0.3
+      random_state: 42
+    outputs:
+      train_output:
+        type: uri_folder
+      test_output:
+        type: uri_folder
+
+  train_diabetes_model:
+    type: command
+    component: azureml:train_diabetes_model@latest
+    compute: diabetes-cluster
+    inputs:
+      train_data:
+        path: ${{parent.jobs.split_diabetic_data.outputs.train_output}}
+      test_data:
+        path: ${{parent.jobs.split_diabetic_data.outputs.test_output}}
+      alpha: 1
+      max_iter: 1000
+
+tags: {}
+properties: {}
+settings: {}

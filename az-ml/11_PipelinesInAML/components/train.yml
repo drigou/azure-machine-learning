@@ -1,0 +1,22 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+name: train_diabetes_model
+display_name: Train diabetes model
+version: "2.1"
+type: command
+inputs:
+  train_data: 
+    type: uri_file
+  test_data:
+    type: uri_file
+  alpha:
+    type: number
+  max_iter:
+    type: integer
+code: ./code
+environment: azureml:diabetic_prediction_environment@latest
+command: | 
+  python split_data.py \
+    --train-data ${{inputs.train_data}} \
+    --test-data ${{inputs.test_data}} \
+    --alpha ${{inputs.alpha}} \
+    --max-iter ${{inputs.max_iter}}
