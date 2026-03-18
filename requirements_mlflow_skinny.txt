@@ -1,0 +1,10 @@
+azure-ai-ml==1.31.0
+python-dotenv==1.2.1
+numpy==2.4.3
+pandas==3.0.1
+scikit-learn==1.8.0      
+mlflow-skinny<3.0.0
+azureml-mlflow<1.61.0
+xgboost==3.2.0
+mltable==1.6.3
+matplotlib==3.10.8

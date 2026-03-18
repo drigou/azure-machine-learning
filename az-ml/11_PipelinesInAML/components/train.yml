@@ -1,7 +1,7 @@
 $schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
 name: train_diabetes_model
 display_name: Train diabetes model
-version: "2.1"
+version: "2.2"
 type: command
 inputs:
   train_data: 
@@ -15,7 +15,7 @@ inputs:
 code: ./code
 environment: azureml:diabetic_prediction_environment@latest
 command: | 
-  python split_data.py \
+  python train.py \
     --train-data ${{inputs.train_data}} \
     --test-data ${{inputs.test_data}} \
     --alpha ${{inputs.alpha}} \
